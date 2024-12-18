@@ -11,7 +11,7 @@ import ollama
 from concurrent.futures import ThreadPoolExecutor
 
 # Set Google API Key for generative AI
-GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY"
+GOOGLE_API_KEY = "AIzaSyBjHaapP1lIlUwr0525g9r1SUWqTFCfFNc"
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # Set up the language models
@@ -55,16 +55,9 @@ class MultimodalRadiologyPipeline:
     def generate_findings(self, user_data, imaging_Modality_Data):
         prompt = f"""
         The following patient has undergone an imaging study with the provided modalities. The patient's details and history are as follows:
-    
-        Patient ID: {user_data['patient_id']}
-        Name: {user_data['patient_name']}
-        Date of Birth: {user_data['dob']}
-        Gender: {user_data['gender']}
-        Exam Date: {user_data['exam_date']}
         Chief Complaint: {user_data['chief_complaint']}
         Clinical History: {user_data['clinical_history']}
-        Imaging Modality Data: {imaging_Modality_Data}
-    
+        Imaging Modality Data: {imaging_Modality_Data}    
         As a radiologist, please provide :
         Findings: Describe the observed imaging findings based on the study.
         """
@@ -75,16 +68,9 @@ class MultimodalRadiologyPipeline:
     def generate_impressions(self, user_data, imaging_Modality_Data):
         prompt = f"""
         The following patient has undergone an imaging study with the provided modalities. The patient's details and history are as follows:
-    
-        Patient ID: {user_data['patient_id']}
-        Name: {user_data['patient_name']}
-        Date of Birth: {user_data['dob']}
-        Gender: {user_data['gender']}
-        Exam Date: {user_data['exam_date']}
         Chief Complaint: {user_data['chief_complaint']}
         Clinical History: {user_data['clinical_history']}
         Imaging Modality Data: {imaging_Modality_Data}
-    
         As a radiologist, please provide :
         Impression: Provide a brief diagnosis or interpretation of the findings.
         """
@@ -95,16 +81,9 @@ class MultimodalRadiologyPipeline:
     def generate_recommendations(self, user_data, imaging_Modality_Data):
         prompt = f"""
         The following patient has undergone an imaging study with the provided modalities. The patient's details and history are as follows:
-    
-        Patient ID: {user_data['patient_id']}
-        Name: {user_data['patient_name']}
-        Date of Birth: {user_data['dob']}
-        Gender: {user_data['gender']}
-        Exam Date: {user_data['exam_date']}
         Chief Complaint: {user_data['chief_complaint']}
         Clinical History: {user_data['clinical_history']}
         Imaging Modality Data: {imaging_Modality_Data}
-    
         As a radiologist, please provide :
         Recommendations: Provide recommendations for the next steps (e.g., additional imaging, follow-up).
         """
@@ -113,30 +92,32 @@ class MultimodalRadiologyPipeline:
         return response
     
     def generate_radiology_report(self, user_data, knowledge_base):
-        print("*******************************")
+        print("************Start*******************")
         imaging_modality_image = Image.open(user_data['imaging_modality'])
         imaging_Modality_Data = self.generate_txt_from_image(imaging_modality_image)
+        print("************Completed Image Modality Data *******************")
         
-        # findings = self.generate_findings(user_data, imaging_Modality_Data)
-        # impression = self.generate_impressions(user_data, imaging_Modality_Data)
-        # recommendations = self.generate_recommendations(user_data, imaging_Modality_Data)
+        findings = self.generate_findings(user_data, imaging_Modality_Data)
+        print("************Completed Findings *******************")
+        impression = self.generate_impressions(user_data, imaging_Modality_Data)
+        print("************Completed Impression*******************")
+        recommendations = self.generate_recommendations(user_data, imaging_Modality_Data)
+        print("************Completed Recommendation *******************")
+        # with ThreadPoolExecutor() as executor:
+        # # Submit the tasks for findings, impressions, and recommendations to be executed in parallel
+        #     findings_future = executor.submit(self.generate_findings, user_data, imaging_Modality_Data)
+        #     impression_future = executor.submit(self.generate_impressions, user_data, imaging_Modality_Data)
+        #     recommendations_future = executor.submit(self.generate_recommendations, user_data, imaging_Modality_Data)
 
-        with ThreadPoolExecutor() as executor:
-        # Submit the tasks for findings, impressions, and recommendations to be executed in parallel
-            findings_future = executor.submit(self.generate_findings, user_data, imaging_Modality_Data)
-            impression_future = executor.submit(self.generate_impressions, user_data, imaging_Modality_Data)
-            recommendations_future = executor.submit(self.generate_recommendations, user_data, imaging_Modality_Data)
-
-            # Wait for all tasks to complete and get the results
-            findings = findings_future.result()
-            impression = impression_future.result()
-            recommendations = recommendations_future.result()
+        #     # Wait for all tasks to complete and get the results
+        #     findings = findings_future.result()
+        #     impression = impression_future.result()
+        #     recommendations = recommendations_future.result()
     
         # Format the input data into the report template
         prompt = f"""
         You are a Radiologist writing a report based on an imaging study. Please follow this standardized RSNA Radiology Report template 
-        and fill in the relevant information based on the following patient details and imaging study findings. Use {knowledge_base}.
-    
+        and fill in the relevant information based on the following patient details and imaging study findings.
         ### RSNA Radiology Report Template:
         1. **Patient Information**: 
            - Patient ID: {user_data['patient_id']}
@@ -144,19 +125,14 @@ class MultimodalRadiologyPipeline:
            - Date of Birth: {user_data['dob']}
            - Gender: {user_data['gender']}
            - Exam Date: {user_data['exam_date']}
-    
         2. **Clinical History**:
            - Chief Complaint: {user_data['chief_complaint']}
            - Relevant Clinical History: {user_data['clinical_history']}
-           
         3. **Imaging Modality**: {user_data['imaging_modality']}
-    
         4. **Findings**:
              - {findings}
-    
         5. **Impression**:
              - {impression}
-    
         6. **Recommendations**:
              - {recommendations}
         """
@@ -164,6 +140,8 @@ class MultimodalRadiologyPipeline:
         # Call the text model to generate the final radiology report
         #response = self.generate_text(prompt)
         response = self.generate_report(prompt)
+        print("************Completed Report *******************")
+        #return prompt
         return response
 
 # Streamlit app
